@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DailyGrandPrix</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+}
+
+label {
+    display: block;
+    margin-top: 10px;
+}
+
+input, select, button {
+    width: 200px;
+    padding: 5px;
+    margin-top: 5px;
+}
+
+#tyreDrag {
+    width: 215px;
+}
+
+button {
+    margin-top: 15px;
+}
+
+#result {
+    margin-top: 15px;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+#error {
+    margin-top: 10px;
+    color: red;
+}
+
+#pushing, #russel {
+    width: 50px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>DailyGrandPrix calculator</h2>
+
+<label>Tyre Drag</label>
+<select id="tyreDrag">
+    <option value="1">1 - Soft</option>
+    <option value="2">2 - Medium</option>
+    <option value="3">3 - Hard</option>
+</select>
+
+<label>Tyre Life (0-100)</label>
+<input type="number" id="tyreLife" value="100">
+
+<label>Fuel Level (0-100)</label>
+<input type="number" id="fuelLevel" value="50">
+
+<label>Gap Ahead (steps)</label>
+<input type="number" id="gapAhead" value="0">
+
+<label>
+<input type="checkbox" id="pushing"> Pushing?
+</label>
+
+<label>
+<input type="checkbox" id="russel"> George Russell?
+</label>
+
+<button onclick="calculate()">Calculate</button>
+
+<div id="result"></div>
+<div id="error"></div>
+
+<script>
+
+function calculate() {
+
+    const tyreDrag = Number(tyreDragEl().value);
+    const tyreLife = Number(tyreLifeEl().value);
+    const fuelLevel = Number(fuelLevelEl().value);
+    const gapAhead = Number(gapAheadEl().value);
+    const isPushing = pushingEl().checked;
+    const isRussel = russelEl().checked;
+
+    resultEl().textContent = "";
+    errorEl().textContent = "";
+
+    try {
+
+        if (tyreDrag < 1 || tyreDrag > 3)
+            throw "Tyre drag must be 1, 2 or 3";
+
+        if (tyreLife < 0 || tyreLife > 100)
+            throw "Tyre life must be 0-100";
+
+        if (fuelLevel < 0 || fuelLevel > 100)
+            throw "Fuel level must be 0-100";
+
+        const steps = calculateStep(
+            tyreDrag,
+            tyreLife,
+            fuelLevel,
+            gapAhead,
+            isPushing,
+            isRussel
+        );
+
+        resultEl().textContent = "Steps = " + steps;
+
+    } catch (e) {
+        errorEl().textContent = e;
+    }
+}
+
+function calculateStep(tyredrag, tyrelife, fuellevel, gapAhead, isPushing, isRussel) {
+
+    const CompFactor = 1 - (0.1 * (tyredrag - 1));
+    const LifeFactor = tyrelife / 100;
+    const FuelFactor = 1 - (fuellevel / 100);
+
+    if (!(gapAhead <= 0 || gapAhead > 20)) {
+        const invert = [
+            20,19,18,17,16,
+            15,14,13,12,11,
+            10,9,8,7,6,
+            5,4,3,2,1
+        ];
+        gapAhead = invert[Math.floor(gapAhead) - 1] + 1;
+    }
+
+    const Slipstream = Math.max(0, gapAhead / 20);
+
+    const base =
+        2.5 +
+        (12.5 *
+            (CompFactor *
+             LifeFactor *
+             (0.6 + (0.4 * FuelFactor)))
+        );
+
+    let multiplier = 2.5;
+
+    if (isPushing && !isRussel) multiplier = 3.25;
+    if (isPushing && isRussel) multiplier = 3.75;
+
+    return Math.ceil(
+        (base * multiplier) *
+        (1 + (0.15 * Slipstream))
+    );
+}
+
+/* Small helpers */
+const tyreDragEl = () => document.getElementById("tyreDrag");
+const tyreLifeEl = () => document.getElementById("tyreLife");
+const fuelLevelEl = () => document.getElementById("fuelLevel");
+const gapAheadEl = () => document.getElementById("gapAhead");
+const pushingEl = () => document.getElementById("pushing");
+const russelEl = () => document.getElementById("russel");
+const resultEl = () => document.getElementById("result");
+const errorEl = () => document.getElementById("error");
+
+</script>
+
+</body>
+</html>
