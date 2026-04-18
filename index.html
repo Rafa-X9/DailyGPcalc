@@ -55,6 +55,7 @@ button {
     <option value="1">1 - Soft</option>
     <option value="2">2 - Medium</option>
     <option value="3">3 - Hard</option>
+    <option value="4">4 - Intermediate</option>
 </select>
 
 <label>Tyre Life (0-100)</label>
@@ -65,6 +66,9 @@ button {
 
 <label>Gap Ahead (steps)</label>
 <input type="number" id="gapAhead" value="0">
+
+<label>Rain Factor (0-60)</label>
+<input type="number" id="rainFactor" value="0">
 
 <label>
 <input type="checkbox" id="pushing"> Pushing?
@@ -86,7 +90,8 @@ function calculate() {
     const tyreDrag = Number(tyreDragEl().value);
     const tyreLife = Number(tyreLifeEl().value);
     const fuelLevel = Number(fuelLevelEl().value);
-    const gapAhead = Number(gapAheadEl().value);
+    let gapAhead = Number(gapAheadEl().value);
+    const rainFactor = Number(rainFactorEl().value);
     const isPushing = pushingEl().checked;
     const isRussel = russelEl().checked;
 
@@ -95,8 +100,8 @@ function calculate() {
 
     try {
 
-        if (tyreDrag < 1 || tyreDrag > 3)
-            throw "Tyre drag must be 1, 2 or 3";
+        if (tyreDrag < 1 || tyreDrag > 4)
+            throw "Tyre drag must be 1–4";
 
         if (tyreLife < 0 || tyreLife > 100)
             throw "Tyre life must be 0-100";
@@ -104,11 +109,18 @@ function calculate() {
         if (fuelLevel < 0 || fuelLevel > 100)
             throw "Fuel level must be 0-100";
 
+        if (rainFactor < 0 || rainFactor > 60)
+            throw "Rain factor must be 0-60";
+
+        if (tyreLife === 100 && isPushing)
+            throw "Pushing with full tyre wear isn't allowed: they are cold";
+
         const steps = calculateStep(
             tyreDrag,
             tyreLife,
             fuelLevel,
             gapAhead,
+            rainFactor,
             isPushing,
             isRussel
         );
@@ -120,7 +132,7 @@ function calculate() {
     }
 }
 
-function calculateStep(tyredrag, tyrelife, fuellevel, gapAhead, isPushing, isRussel) {
+function calculateStep(tyredrag, tyrelife, fuellevel, gapAhead, rainFactor, isPushing, isRussel) {
 
     const CompFactor = 1 - (0.1 * (tyredrag - 1));
     const LifeFactor = tyrelife / 100;
@@ -138,6 +150,8 @@ function calculateStep(tyredrag, tyrelife, fuellevel, gapAhead, isPushing, isRus
 
     const Slipstream = Math.max(0, gapAhead / 20);
 
+    let baseSteps;
+
     const base =
         2.5 +
         (12.5 *
@@ -146,22 +160,39 @@ function calculateStep(tyredrag, tyrelife, fuellevel, gapAhead, isPushing, isRus
              (0.6 + (0.4 * FuelFactor)))
         );
 
-    let multiplier = 2.5;
+    if (!isPushing)
+        baseSteps = Math.ceil((base * 2.5) * (1 + (0.15 * Slipstream)));
+    else if (!isRussel)
+        baseSteps = Math.ceil((base * 3.25) * (1 + (0.15 * Slipstream)));
+    else
+        baseSteps = Math.ceil((base * 3.75) * (1 + (0.15 * Slipstream)));
 
-    if (isPushing && !isRussel) multiplier = 3.25;
-    if (isPushing && isRussel) multiplier = 3.75;
+    switch (tyredrag) {
+        case 1:
+            baseSteps = Math.ceil(baseSteps / (rainFactor / 10.0 + 1.0));
+            break;
+        case 2:
+            baseSteps = Math.ceil(baseSteps / (rainFactor / 20.0 + 1.0));
+            break;
+        case 3:
+            baseSteps = Math.ceil(baseSteps / (rainFactor / 50.0 + 1.0));
+            break;
+        case 4:
+            const divisor = Math.floor(0.0104 * Math.pow((rainFactor - 25), 2) + 1);
+            baseSteps = Math.ceil(baseSteps / divisor);
+            break;
+        default:
+            throw "Invalid tyre drag";
+    }
 
-    return Math.ceil(
-        (base * multiplier) *
-        (1 + (0.15 * Slipstream))
-    );
+    return baseSteps;
 }
 
-/* Small helpers */
 const tyreDragEl = () => document.getElementById("tyreDrag");
 const tyreLifeEl = () => document.getElementById("tyreLife");
 const fuelLevelEl = () => document.getElementById("fuelLevel");
 const gapAheadEl = () => document.getElementById("gapAhead");
+const rainFactorEl = () => document.getElementById("rainFactor");
 const pushingEl = () => document.getElementById("pushing");
 const russelEl = () => document.getElementById("russel");
 const resultEl = () => document.getElementById("result");
