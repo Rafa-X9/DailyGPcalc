@@ -40,7 +40,7 @@ button {
     color: red;
 }
 
-#pushing, #russel {
+#pushing, #russel, #stroll {
     width: 50px;
 }
 </style>
@@ -78,6 +78,10 @@ button {
 <input type="checkbox" id="russel"> George Russell?
 </label>
 
+<label>
+<input type="checkbox" id="stroll"> Lance Stroll?
+</label>
+
 <button onclick="calculate()">Calculate</button>
 
 <div id="result"></div>
@@ -94,6 +98,7 @@ function calculate() {
     const rainFactor = Number(rainFactorEl().value);
     const isPushing = pushingEl().checked;
     const isRussel = russelEl().checked;
+    const isStroll = strollEl().checked;
 
     resultEl().textContent = "";
     errorEl().textContent = "";
@@ -115,6 +120,9 @@ function calculate() {
         if (tyreLife === 100 && isPushing)
             throw "Pushing with full tyre wear isn't allowed: they are cold";
 
+        if (isRussel && isStroll)
+            throw "Having two classes is not allowed"
+
         const steps = calculateStep(
             tyreDrag,
             tyreLife,
@@ -122,7 +130,8 @@ function calculate() {
             gapAhead,
             rainFactor,
             isPushing,
-            isRussel
+            isRussel,
+            isStroll
         );
 
         resultEl().textContent = "Steps = " + steps;
@@ -132,7 +141,7 @@ function calculate() {
     }
 }
 
-function calculateStep(tyredrag, tyrelife, fuellevel, gapAhead, rainFactor, isPushing, isRussel) {
+function calculateStep(tyredrag, tyrelife, fuellevel, gapAhead, rainFactor, isPushing, isRussel, isStroll) {
 
     const CompFactor = 1 - (0.1 * (tyredrag - 1));
     const LifeFactor = tyrelife / 100;
@@ -178,7 +187,8 @@ function calculateStep(tyredrag, tyrelife, fuellevel, gapAhead, rainFactor, isPu
             baseSteps = Math.ceil(baseSteps / (rainFactor / 50.0 + 1.0));
             break;
         case 4:
-            const divisor = Math.floor(0.0104 * Math.pow((rainFactor - 25), 2) + 1);
+            const strollFactor = isStroll ? 1.0 : 1.3;
+            const divisor = 0.0104 * ((rainFactor - 25) * (rainFactor - 25)) + strollFactor;
             baseSteps = Math.ceil(baseSteps / divisor);
             break;
         default:
@@ -195,6 +205,7 @@ const gapAheadEl = () => document.getElementById("gapAhead");
 const rainFactorEl = () => document.getElementById("rainFactor");
 const pushingEl = () => document.getElementById("pushing");
 const russelEl = () => document.getElementById("russel");
+const strollEl = () => document.getElementById("stroll");
 const resultEl = () => document.getElementById("result");
 const errorEl = () => document.getElementById("error");
 
