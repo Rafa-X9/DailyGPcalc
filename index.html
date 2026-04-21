@@ -178,13 +178,13 @@ function calculateStep(tyredrag, tyrelife, fuellevel, gapAhead, rainFactor, isPu
 
     switch (tyredrag) {
         case 1:
-            baseSteps = Math.ceil(baseSteps / (rainFactor / 10.0 + 1.0));
+            baseSteps = Math.ceil(baseSteps / (rainFactor / 5.0 + 1.0));
             break;
         case 2:
-            baseSteps = Math.ceil(baseSteps / (rainFactor / 20.0 + 1.0));
+            baseSteps = Math.ceil(baseSteps / (rainFactor / 12.0 + 1.0));
             break;
         case 3:
-            baseSteps = Math.ceil(baseSteps / (rainFactor / 50.0 + 1.0));
+            baseSteps = Math.ceil(baseSteps / (rainFactor / 20.0 + 1.0));
             break;
         case 4:
             const strollFactor = isStroll ? 1.0 : 1.3;
